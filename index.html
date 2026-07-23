@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
+<title>AHC CardsRef — Cardiology Pocket Reference</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --surface:#ffffff; --surface-2:#f8fafc;
+    --ink:#0f172a; --ink-2:#475569; --ink-3:#94a3b8;
+    --line:#e2e8f0; --line-2:#eef2f6;
+    --primary:#0e7490; --primary-ink:#155e75; --primary-tint:#ecfeff;
+    --urgent:#dc2626; --urgent-tint:#fef2f2;
+    --docs:#4f46e5; --workflow:#059669;
+    --shadow:0 1px 2px rgba(15,23,42,.06), 0 4px 16px rgba(15,23,42,.04);
+    --radius:16px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0b1220; --surface:#111a2b; --surface-2:#0f1826;
+      --ink:#e8edf4; --ink-2:#9fb0c4; --ink-3:#64748b;
+      --line:#1e293b; --line-2:#182234;
+      --primary:#22d3ee; --primary-ink:#67e8f9; --primary-tint:#0d2b33;
+      --urgent:#f87171; --urgent-tint:#2a1414;
+      --docs:#a5b4fc; --workflow:#34d399;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--font); background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    overscroll-behavior-y:none;
+  }
+  button{font-family:inherit; cursor:pointer}
+  a{color:var(--primary-ink); text-decoration:none}
+  .app{max-width:640px; margin:0 auto; min-height:100vh; min-height:100dvh; display:flex; flex-direction:column}
+
+  /* Top bar */
+  .top{
+    position:sticky; top:0; z-index:20; background:var(--surface);
+    padding:calc(var(--safe-top) + 12px) 16px 12px; border-bottom:1px solid var(--line);
+  }
+  .top-row{display:flex; align-items:center; gap:12px; min-height:34px}
+  .back{
+    border:none; background:none; color:var(--primary-ink); font-size:16px; font-weight:600;
+    padding:6px 6px 6px 0; margin-left:-4px; display:none; align-items:center; gap:4px;
+  }
+  .back.show{display:inline-flex}
+  .brand{font-size:19px; font-weight:800; letter-spacing:-.02em; flex:1; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .brand small{display:block; font-size:11px; font-weight:600; color:var(--ink-3); letter-spacing:.02em}
+  .who{
+    border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2);
+    font-size:12px; font-weight:600; padding:6px 10px; border-radius:999px; white-space:nowrap;
+  }
+  .search{
+    margin-top:12px; display:flex; align-items:center; gap:8px; background:var(--surface-2);
+    border:1px solid var(--line); border-radius:12px; padding:10px 12px;
+  }
+  .search input{
+    border:none; background:none; outline:none; font-size:16px; color:var(--ink); width:100%;
+  }
+  .search svg{flex:none; color:var(--ink-3)}
+  .search .clear{border:none;background:none;color:var(--ink-3);font-size:18px;padding:0 2px;display:none}
+  .search .clear.show{display:block}
+
+  /* Scroll body */
+  .scroll{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px 16px 120px}
+
+  /* Home tiles */
+  .tiles{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .tile{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px; text-align:left; box-shadow:var(--shadow); display:flex; flex-direction:column;
+    gap:10px; min-height:120px; transition:transform .12s ease;
+  }
+  .tile:active{transform:scale(.975)}
+  .tile .dot{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center}
+  .tile .dot svg{width:20px;height:20px}
+  .tile h3{margin:0; font-size:16px; font-weight:700; letter-spacing:-.01em}
+  .tile .count{margin-top:auto; font-size:12px; color:var(--ink-3); font-weight:600}
+  .cat-call .dot{background:var(--urgent-tint); color:var(--urgent)}
+  .cat-consult .dot{background:var(--primary-tint); color:var(--primary-ink)}
+  .cat-docs .dot{background:color-mix(in srgb,var(--docs) 12%,transparent); color:var(--docs)}
+  .cat-workflow .dot{background:color-mix(in srgb,var(--workflow) 14%,transparent); color:var(--workflow)}
+
+  .section-label{font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-3); margin:22px 4px 10px}
+
+  /* List rows */
+  .list{display:flex; flex-direction:column; gap:10px}
+  .row{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .row-main{display:flex; align-items:center; gap:12px; padding:14px 14px; width:100%;
+    background:none; border:none; text-align:left; color:inherit}
+  .row-main:active{background:var(--surface-2)}
+  .row-body{flex:1; min-width:0}
+  .row-title{font-size:16px; font-weight:700; letter-spacing:-.01em; margin:0}
+  .row-sub{font-size:13px; color:var(--ink-2); margin:2px 0 0; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap}
+  .row-cat{font-size:11px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    color:var(--ink-3)}
+  .num{font-family:var(--mono); font-size:15px; font-weight:600; letter-spacing:.02em}
+  .chev{color:var(--ink-3); flex:none}
+
+  /* Call action row */
+  .call-actions{display:flex; border-top:1px solid var(--line-2)}
+  .call-actions a, .call-actions button{
+    flex:1; border:none; background:none; padding:12px; font-size:14px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; gap:7px; color:var(--primary-ink);
+    text-decoration:none;
+  }
+  .call-actions a:active, .call-actions button:active{background:var(--surface-2)}
+  .call-actions .call-btn{color:var(--urgent)}
+  .call-actions a + button, .call-actions button + a, .call-actions button + button{border-left:1px solid var(--line-2)}
+
+  /* Detail */
+  .detail-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:20px; }
+  .detail-card h2{margin:0 0 4px; font-size:22px; font-weight:800; letter-spacing:-.02em}
+  .detail-sub{color:var(--ink-2); font-size:15px; margin:0 0 16px}
+  .contact-grid{display:flex; flex-direction:column; gap:10px; margin:0 0 18px}
+  .contact{display:flex; align-items:center; gap:12px; background:var(--surface-2);
+    border:1px solid var(--line); border-radius:12px; padding:12px 14px}
+  .contact .lbl{font-size:12px; font-weight:700; color:var(--ink-3); text-transform:uppercase;
+    letter-spacing:.04em; width:52px; flex:none}
+  .contact .val{font-family:var(--mono); font-size:16px; font-weight:600; flex:1}
+  .contact .mini{border:none;background:none;color:var(--primary-ink);font-weight:700;font-size:13px;padding:6px}
+  .big-call{display:flex; gap:10px; margin:0 0 18px}
+  .big-call a, .big-call button{
+    flex:1; border:none; border-radius:12px; padding:15px; font-size:16px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; gap:8px; text-align:center;
+  }
+  .big-call .primary{background:var(--urgent); color:#fff}
+  .big-call .ghost{background:var(--surface-2); color:var(--ink); border:1px solid var(--line)}
+  .big-call .primary:active,.big-call .ghost:active{filter:brightness(.95)}
+  .prose{font-size:15.5px; line-height:1.6; color:var(--ink)}
+  .prose p{margin:0 0 12px}
+  .prose ul{margin:0 0 12px; padding-left:20px}
+  .prose li{margin:0 0 5px}
+  .prose a{text-decoration:underline; word-break:break-word}
+  .link-out{display:inline-flex; align-items:center; gap:6px; margin-top:6px; background:var(--primary-tint);
+    color:var(--primary-ink); font-weight:700; font-size:14px; padding:10px 14px; border-radius:10px}
+  .tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:16px}
+  .tag{font-size:12px; font-weight:600; color:var(--ink-2); background:var(--surface-2);
+    border:1px solid var(--line); border-radius:999px; padding:4px 10px}
+  .meta{margin-top:18px; padding-top:14px; border-top:1px solid var(--line-2); font-size:12.5px; color:var(--ink-3)}
+  .meta a{color:var(--ink-3); text-decoration:underline}
+
+  .detail-actions{display:flex; gap:10px; margin-top:16px}
+  .detail-actions button{flex:1; border-radius:12px; padding:13px; font-size:15px; font-weight:700; border:1px solid var(--line)}
+  .btn-edit{background:var(--surface); color:var(--ink)}
+  .btn-del{background:var(--urgent-tint); color:var(--urgent); border-color:transparent}
+
+  /* FAB */
+  .fab{position:fixed; right:calc(50% - 320px + 20px); bottom:calc(24px + var(--safe-bottom)); z-index:30;
+    width:56px; height:56px; border-radius:18px; background:var(--primary); color:#fff; border:none;
+    box-shadow:0 8px 24px rgba(14,116,144,.4); display:flex; align-items:center; justify-content:center}
+  .fab:active{transform:scale(.94)}
+  @media (max-width:680px){ .fab{right:20px} }
+
+  /* Empty */
+  .empty{text-align:center; padding:60px 24px; color:var(--ink-3)}
+  .empty svg{opacity:.4; margin-bottom:12px}
+  .empty p{margin:0; font-size:15px}
+
+  /* Sheet / modal */
+  .sheet-bg{position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:40; opacity:0;
+    pointer-events:none; transition:opacity .2s ease; backdrop-filter:blur(2px)}
+  .sheet-bg.show{opacity:1; pointer-events:auto}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:50; background:var(--surface);
+    border-radius:22px 22px 0 0; max-width:640px; margin:0 auto; max-height:92dvh; overflow-y:auto;
+    transform:translateY(100%); pointer-events:none; transition:transform .28s cubic-bezier(.32,.72,0,1);
+    padding:8px 18px calc(24px + var(--safe-bottom)); box-shadow:0 -8px 40px rgba(0,0,0,.2)}
+  .sheet.show{transform:translateY(0); pointer-events:auto}
+  .grab{width:38px; height:5px; background:var(--line); border-radius:999px; margin:8px auto 4px}
+  .sheet h3{font-size:19px; font-weight:800; margin:6px 2px 16px}
+  .field{margin-bottom:14px}
+  .field label{display:block; font-size:12px; font-weight:700; color:var(--ink-2); text-transform:uppercase;
+    letter-spacing:.04em; margin-bottom:6px}
+  .field input, .field textarea, .field select{
+    width:100%; border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
+    border-radius:11px; padding:12px 13px; font-size:16px; font-family:inherit; outline:none}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--primary); background:var(--surface)}
+  .field textarea{min-height:120px; resize:vertical; line-height:1.5}
+  .field .hint{font-size:12px; color:var(--ink-3); margin-top:5px; font-weight:500; text-transform:none; letter-spacing:0}
+  .row2{display:flex; gap:10px}
+  .row2 .field{flex:1}
+  .sheet-actions{display:flex; gap:10px; margin-top:8px; position:sticky; bottom:0; background:var(--surface);
+    padding:12px 0 4px}
+  .sheet-actions button{flex:1; border-radius:12px; padding:14px; font-size:16px; font-weight:800; border:none}
+  .save{background:var(--primary); color:#fff}
+  .cancel{background:var(--surface-2); color:var(--ink); border:1px solid var(--line)}
+
+  .toast{position:fixed; left:50%; bottom:calc(90px + var(--safe-bottom)); transform:translateX(-50%) translateY(10px);
+    background:var(--ink); color:var(--bg); font-size:14px; font-weight:600; padding:11px 18px; border-radius:999px;
+    z-index:80; opacity:0; transition:all .22s ease; pointer-events:none; box-shadow:var(--shadow)}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  .banner{background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:11px 13px;
+    font-size:12.5px; color:var(--ink-2); line-height:1.5; margin-bottom:16px}
+  .banner b{color:var(--ink)}
+
+  .hist{margin-top:6px}
+  .hist details{border-top:1px solid var(--line-2); padding-top:12px}
+  .hist summary{font-size:12.5px; color:var(--ink-3); font-weight:700; cursor:pointer; list-style:none}
+  .hist summary::-webkit-details-marker{display:none}
+  .hist ul{list-style:none; padding:0; margin:10px 0 0}
+  .hist li{font-size:12.5px; color:var(--ink-2); padding:6px 0; border-bottom:1px solid var(--line-2)}
+  .hist li b{color:var(--ink); font-weight:700}
+
+  /* Markdown prose */
+  .prose h1,.prose h2,.prose h3,.prose h4{margin:18px 0 8px; font-weight:800; letter-spacing:-.01em; line-height:1.25}
+  .prose h1{font-size:20px} .prose h2{font-size:18px} .prose h3{font-size:16px} .prose h4{font-size:14.5px}
+  .prose ol{margin:0 0 12px; padding-left:22px}
+  .prose ol li{margin:0 0 5px}
+  .prose code{font-family:var(--mono); font-size:.88em; background:var(--surface-2); border:1px solid var(--line);
+    border-radius:6px; padding:1px 5px}
+  .prose pre{background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:12px 14px;
+    overflow-x:auto; margin:0 0 12px}
+  .prose pre code{background:none; border:none; padding:0; font-size:13px; line-height:1.5}
+  .prose blockquote{margin:0 0 12px; padding:2px 14px; border-left:3px solid var(--primary); color:var(--ink-2)}
+  .prose hr{border:none; border-top:1px solid var(--line); margin:16px 0}
+  .prose strong{font-weight:800} .prose em{font-style:italic} .prose del{opacity:.6}
+  .prose a.wikilink{display:inline; text-decoration:none; font-weight:700; color:var(--primary-ink);
+    border-bottom:1px solid color-mix(in srgb,var(--primary) 40%,transparent)}
+  .prose a.wikilink::before{content:"› "; font-weight:800; opacity:.65}
+  .prose a.wikilink.missing{color:var(--urgent); border-bottom:1px dashed color-mix(in srgb,var(--urgent) 50%,transparent)}
+  .prose a.wikilink.missing::before{content:"+ "}
+
+  /* Add-category tile */
+  .tile.add{align-items:center; justify-content:center; border-style:dashed; background:var(--surface-2);
+    color:var(--ink-3); font-weight:700; gap:8px; text-align:center}
+  .tile.add .dot{background:var(--line-2); color:var(--ink-2)}
+
+  /* Category list header */
+  .cat-head{display:flex; align-items:center; gap:10px; margin:22px 4px 12px}
+  .cat-head .section-label{margin:0; flex:1}
+  .cat-head .gear{border:1px solid var(--line); background:var(--surface); color:var(--ink-2);
+    border-radius:10px; padding:7px 11px; font-size:13px; font-weight:700; display:inline-flex; align-items:center; gap:6px}
+
+  /* Category editor */
+  .icon-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:6px}
+  .icon-opt{aspect-ratio:1; border:1px solid var(--line); background:var(--surface-2); border-radius:11px;
+    display:flex; align-items:center; justify-content:center; color:var(--ink-2)}
+  .icon-opt svg{width:20px;height:20px}
+  .icon-opt.sel{border-color:var(--primary); background:var(--primary-tint); color:var(--primary-ink); box-shadow:0 0 0 1px var(--primary) inset}
+  .swatches{display:flex; flex-wrap:wrap; gap:10px}
+  .swatch{width:34px;height:34px;border-radius:999px;border:none; box-shadow:0 0 0 2px var(--surface)}
+  .swatch.sel{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
+  .seg{display:flex; gap:8px}
+  .seg button{flex:1; border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2);
+    border-radius:11px; padding:11px; font-size:14px; font-weight:700}
+  .seg button.sel{border-color:var(--primary); background:var(--primary-tint); color:var(--primary-ink)}
+  .cat-tools{display:flex; gap:8px; margin:2px 0 14px}
+  .cat-tools button{flex:1; border:1px solid var(--line); background:var(--surface); color:var(--ink-2);
+    border-radius:11px; padding:11px; font-size:13px; font-weight:700}
+  .cat-tools button:disabled{opacity:.4}
+  .cat-del{width:100%; border:none; background:var(--urgent-tint); color:var(--urgent); font-weight:800;
+    border-radius:12px; padding:13px; font-size:15px; margin-top:4px}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+  :focus-visible{outline:2px solid var(--primary); outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="top-row">
+      <button class="back" id="backBtn" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Back
+      </button>
+      <div class="brand" id="brandTitle">AHC CardsRef<small id="brandSub">Cardiology Consult Reference</small></div>
+      <button class="who" id="whoBtn">Guest</button>
+    </div>
+    <label class="search" id="searchWrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="searchInput" type="search" placeholder="Search numbers, questions, docs…" autocomplete="off" enterkeyhint="search" />
+      <button class="clear" id="searchClear" aria-label="Clear">&times;</button>
+    </label>
+  </header>
+
+  <main class="scroll" id="scroll"></main>
+
+  <button class="fab" id="fabBtn" aria-label="Add entry">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</div>
+
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<!-- Supabase client (public CDN) + your project config -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
+<script>
+"use strict";
+/* ---------- Config + Supabase client ---------- */
+const CFG = (typeof window!=="undefined" && window.CARDSREF_CONFIG) || {};
+const CONFIGURED = !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY
+  && !/YOUR[-_]/i.test(CFG.SUPABASE_URL) && !/YOUR[-_]/i.test(CFG.SUPABASE_ANON_KEY)
+  && window.supabase && typeof window.supabase.createClient==="function");
+const sb = CONFIGURED ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
+let USER = null; // Supabase auth user, or null
+
+function localStorageGet(k){ try{return window.localStorage.getItem(k)||"";}catch(e){return "";} }
+function localStorageSet(k,v){ try{window.localStorage.setItem(k,v);}catch(e){} }
+
+/* ---------- Row mappers (DB snake_case <-> app camelCase) ---------- */
+function toEntryRow(e){
+  return { id:e.id, cat:e.cat, title:e.title||"", subtitle:e.subtitle||"", phone:e.phone||"",
+    pager:e.pager||"", ext:e.ext||"", body:e.body||"", url:e.url||"", tags:e.tags||[],
+    updated_at:new Date(e.updatedAt||Date.now()).toISOString(), updated_by:e.updatedBy||null,
+    history:e.history||[] };
+}
+function fromEntryRow(r){
+  return { id:r.id, cat:r.cat, title:r.title||"", subtitle:r.subtitle||"", phone:r.phone||"",
+    pager:r.pager||"", ext:r.ext||"", body:r.body||"", url:r.url||"", tags:r.tags||[],
+    updatedAt:r.updated_at?Date.parse(r.updated_at):Date.now(), updatedBy:r.updated_by||"",
+    history:r.history||[] };
+}
+function toCatRow(c,pos){ return { id:c.id, name:c.name, plural:c.plural||"items", icon:c.icon||"doc",
+    color:c.color||"#64748b", kind:c.kind||"content", position:(pos!=null?pos:(c.position||0)) }; }
+function fromCatRow(r){ return { id:r.id, name:r.name, plural:r.plural, icon:r.icon, color:r.color, kind:r.kind, position:r.position }; }
+
+/* ---------- Data layer: Supabase when configured, in-memory otherwise ---------- */
+let MEM = null;
+const supaDB = {
+  async loadAll(){
+    const [cRes, eRes] = await Promise.all([
+      sb.from("categories").select("*").order("position",{ascending:true}),
+      sb.from("entries").select("*")
+    ]);
+    if(cRes.error) throw cRes.error;
+    if(eRes.error) throw eRes.error;
+    return { cats:(cRes.data||[]).map(fromCatRow), entries:(eRes.data||[]).map(fromEntryRow) };
+  },
+  async saveEntry(e){ const {error}=await sb.from("entries").upsert(toEntryRow(e)); if(error) throw error; },
+  async removeEntry(id){ const {error}=await sb.from("entries").delete().eq("id",id); if(error) throw error; },
+  async saveCat(c){ const {error}=await sb.from("categories").upsert(toCatRow(c)); if(error) throw error; },
+  async removeCat(id){
+    const r1=await sb.from("entries").delete().eq("cat",id); if(r1.error) throw r1.error;
+    const r2=await sb.from("categories").delete().eq("id",id); if(r2.error) throw r2.error;
+  },
+  async setCatPositions(list){ const rows=list.map((c,i)=>toCatRow(c,i)); const {error}=await sb.from("categories").upsert(rows); if(error) throw error; }
+};
+const memDB = {
+  async loadAll(){ if(!MEM) MEM=seed(); return { cats:MEM.cats.map(c=>({...c})), entries:MEM.entries.map(e=>({...e})) }; },
+  async saveEntry(e){ if(!MEM) MEM=seed(); const i=MEM.entries.findIndex(x=>x.id===e.id); if(i>=0)MEM.entries[i]={...e}; else MEM.entries.push({...e}); },
+  async removeEntry(id){ if(MEM) MEM.entries=MEM.entries.filter(x=>x.id!==id); },
+  async saveCat(c){ if(!MEM) MEM=seed(); const i=MEM.cats.findIndex(x=>x.id===c.id); if(i>=0)MEM.cats[i]={...c}; else MEM.cats.push({...c}); },
+  async removeCat(id){ if(MEM){ MEM.cats=MEM.cats.filter(x=>x.id!==id); MEM.entries=MEM.entries.filter(e=>e.cat!==id); } },
+  async setCatPositions(list){ if(MEM) MEM.cats=list.map(c=>({...c})); }
+};
+const DB = CONFIGURED ? supaDB : memDB;
+
+/* ---------- Icon library (for category customization) ---------- */
+const ICONS = {
+  phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+  help:'<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>',
+  activity:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  pill:'<path d="M10.5 20.5 3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7z"/><path d="m8.5 8.5 7 7"/>',
+  bolt:'<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
+  star:'<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/>',
+  book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  clipboard:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  map:'<path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/>',
+};
+function iconSvg(key){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[key]||ICONS.doc}</svg>`; }
+
+/* ---------- Categories (customizable; stored in DATA.cats) ---------- */
+const CAT_COLORS = ["#dc2626","#ea580c","#d97706","#059669","#0e7490","#2563eb","#4f46e5","#7c3aed","#db2777","#475569"];
+const DEFAULT_CATS = [
+  {id:"call",     name:"Who to Call",       plural:"contacts",  icon:"phone", color:"#dc2626", kind:"contact"},
+  {id:"consult",  name:"Consult Questions", plural:"topics",    icon:"help",  color:"#0e7490", kind:"content"},
+  {id:"docs",     name:"Documents & Links", plural:"documents", icon:"doc",   color:"#4f46e5", kind:"content"},
+  {id:"workflow", name:"Workflows",         plural:"workflows", icon:"list",  color:"#059669", kind:"content"},
+];
+function cats(){ return (DATA.cats && DATA.cats.length) ? DATA.cats : DEFAULT_CATS; }
+function catById(id){ return cats().find(c=>c.id===id) || {id:id||"other", name:"Other", plural:"items", icon:"doc", color:"#64748b", kind:"content"}; }
+function isContactCat(id){ return catById(id).kind==="contact"; }
+
+/* ---------- App state ---------- */
+let DATA = {meta:{title:"CardsRef", sub:"Cardiology Consult Reference"}, cats:DEFAULT_CATS.slice(), entries:[]};
+let EDITOR = "";
+let view = {name:"home"}; // {name:'home'} | {name:'cat', cat} | {name:'entry', id} | {name:'search', q}
+
+/* ---------- Utilities ---------- */
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dial = s => String(s||"").replace(/[^\d+*#,;]/g,"");
+function timeAgo(ts){
+  if(!ts) return "";
+  const d=(Date.now()-ts)/1000;
+  if(d<60) return "just now";
+  if(d<3600) return Math.floor(d/60)+"m ago";
+  if(d<86400) return Math.floor(d/3600)+"h ago";
+  if(d<604800) return Math.floor(d/86400)+"d ago";
+  return new Date(ts).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),1600); }
+
+/* ---------- Markdown ---------- */
+function findEntryByTitle(t){
+  const n=String(t).trim().toLowerCase();
+  return DATA.entries.find(e=>String(e.title).trim().toLowerCase()===n) || null;
+}
+function safeUrl(u){
+  u=String(u||"").trim();
+  if(/^(https?:|mailto:|tel:)/i.test(u)) return u;
+  if(/^www\./i.test(u)) return "https://"+u;
+  if(/^[/#]/.test(u)) return u;
+  return null; // block javascript:, data:, etc.
+}
+/* Inline formatting: links/wiki-links/code stashed before escaping, then bold/italic applied */
+function inlineMd(text){
+  const tok=[];
+  const stash = html => "\u0000T"+(tok.push(html)-1)+"\u0000";
+  // inline code (protect from all other formatting)
+  text = text.replace(/`([^`]+)`/g,(m,c)=>stash("<code>"+esc(c)+"</code>"));
+  // [[wiki links]] and [[Title|label]] -> in-app subpage navigation
+  text = text.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,(m,title,label)=>{
+    const t=title.trim(), lbl=(label||title).trim();
+    const target=findEntryByTitle(t);
+    if(target) return stash(`<a href="#" class="wikilink" data-entry="${esc(target.id)}">${esc(lbl)}</a>`);
+    return stash(`<a href="#" class="wikilink missing" data-newpage="${esc(t)}">${esc(lbl)}</a>`);
+  });
+  // [text](url) external links
+  text = text.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g,(m,txt,url)=>{
+    const safe=safeUrl(url); if(!safe) return esc(txt);
+    return stash(`<a href="${esc(safe)}" target="_blank" rel="noopener">${esc(txt)}</a>`);
+  });
+  // bare URL autolink
+  text = text.replace(/(?:https?:\/\/|www\.)[^\s<)]+/g,(m)=>{
+    const safe=safeUrl(m); if(!safe) return m;
+    return stash(`<a href="${esc(safe)}" target="_blank" rel="noopener">${esc(m)}</a>`);
+  });
+  // escape whatever text remains
+  text = esc(text);
+  // emphasis
+  text = text.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>")
+             .replace(/__([^_]+)__/g,"<strong>$1</strong>")
+             .replace(/~~([^~]+)~~/g,"<del>$1</del>")
+             .replace(/\*([^*\n]+)\*/g,"<em>$1</em>")
+             .replace(/(^|[^\w])_([^_\n]+)_(?!\w)/g,"$1<em>$2</em>");
+  // restore stashed tokens
+  return text.replace(/\u0000T(\d+)\u0000/g,(m,n)=>tok[+n]);
+}
+function renderMarkdown(src){
+  if(!src || !src.trim()) return "";
+  const lines = src.replace(/\r\n?/g,"\n").split("\n");
+  let html="", para=[], i=0;
+  const flushP=()=>{ if(para.length){ html+="<p>"+inlineMd(para.join(" "))+"</p>"; para=[]; } };
+  while(i<lines.length){
+    const line=lines[i];
+    // fenced code block
+    if(/^\s*```/.test(line)){
+      flushP(); i++; const code=[];
+      while(i<lines.length && !/^\s*```/.test(lines[i])){ code.push(lines[i]); i++; }
+      i++; html+="<pre><code>"+esc(code.join("\n"))+"</code></pre>"; continue;
+    }
+    // horizontal rule
+    if(/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)){ flushP(); html+="<hr>"; i++; continue; }
+    // heading
+    const h=line.match(/^\s{0,3}(#{1,6})\s+(.*)$/);
+    if(h){ flushP(); const l=Math.min(h[1].length,4); html+="<h"+l+">"+inlineMd(h[2].trim())+"</h"+l+">"; i++; continue; }
+    // blockquote (recursively render inner content)
+    if(/^\s*>\s?/.test(line)){
+      flushP(); const q=[];
+      while(i<lines.length && /^\s*>\s?/.test(lines[i])){ q.push(lines[i].replace(/^\s*>\s?/,"")); i++; }
+      html+="<blockquote>"+renderMarkdown(q.join("\n"))+"</blockquote>"; continue;
+    }
+    // unordered list
+    if(/^\s*[-*+]\s+/.test(line)){
+      flushP(); const items=[];
+      while(i<lines.length && /^\s*[-*+]\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*[-*+]\s+/,"")); i++; }
+      html+="<ul>"+items.map(t=>"<li>"+inlineMd(t)+"</li>").join("")+"</ul>"; continue;
+    }
+    // ordered list
+    if(/^\s*\d+[.)]\s+/.test(line)){
+      flushP(); const items=[];
+      while(i<lines.length && /^\s*\d+[.)]\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*\d+[.)]\s+/,"")); i++; }
+      html+="<ol>"+items.map(t=>"<li>"+inlineMd(t)+"</li>").join("")+"</ol>"; continue;
+    }
+    // blank line ends a paragraph
+    if(line.trim()===""){ flushP(); i++; continue; }
+    para.push(line.trim()); i++;
+  }
+  flushP();
+  return html;
+}
+/* plain-text preview (strip markdown syntax) */
+function stripMd(s){
+  return String(s||"").replace(/\r?\n/g," ")
+    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,(m,a,b)=>b||a)
+    .replace(/\[([^\]]+)\]\([^)]*\)/g,"$1")
+    .replace(/[#>*_`~-]/g," ").replace(/\s+/g," ").trim();
+}
+
+/* ---------- Rendering ---------- */
+function countIn(cat){ return DATA.entries.filter(e=>e.cat===cat).length; }
+
+function render(){
+  const scroll=$("#scroll");
+  const back=$("#backBtn");
+  back.classList.toggle("show", view.name!=="home" && view.name!=="search");
+  $("#brandTitle").firstChild.textContent = DATA.meta.title || "CardsRef";
+  $("#brandSub").textContent = DATA.meta.sub || "";
+  updateAccountUI();
+
+  if(view.name==="search"){ scroll.innerHTML=""; scroll.appendChild(renderSearch(view.q)); return; }
+  if(view.name==="cat"){ scroll.innerHTML=""; scroll.appendChild(renderCat(view.cat)); return; }
+  if(view.name==="entry"){ scroll.innerHTML=""; scroll.appendChild(renderEntry(view.id)); return; }
+  scroll.innerHTML=""; scroll.appendChild(renderHome());
+}
+
+function renderHome(){
+  const frag=document.createDocumentFragment();
+  const banner=document.createElement("div");
+  banner.className="banner";
+  banner.innerHTML=(CONFIGURED
+      ? '<b>Team-editable.</b> Anyone can browse — sign in to add or fix a card. '
+      : '<b>Preview mode.</b> Not connected to Supabase yet, so edits stay on this device only. ')
+    + 'Community-maintained reference — verify against official program sources; not a substitute for clinical judgment.';
+  frag.appendChild(banner);
+
+  const tiles=document.createElement("div");
+  tiles.className="tiles";
+  for(const cat of cats()){
+    const t=document.createElement("button");
+    t.className="tile";
+    t.innerHTML=`<span class="dot">${iconSvg(cat.icon)}</span>
+      <h3>${esc(cat.name)}</h3>
+      <span class="count">${countIn(cat.id)} ${esc(cat.plural||"items")}</span>`;
+    const dot=t.querySelector(".dot");
+    dot.style.color=cat.color||"#64748b"; dot.style.background=(cat.color||"#64748b")+"22";
+    t.onclick=()=>go({name:"cat",cat:cat.id});
+    tiles.appendChild(t);
+  }
+  const add=document.createElement("button");
+  add.className="tile add";
+  add.innerHTML=`<span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><h3>New category</h3>`;
+  add.onclick=()=> canEdit()?openCatSheet(null):openSignIn();
+  tiles.appendChild(add);
+
+  frag.appendChild(tiles);
+  return frag;
+}
+
+function rowEl(e){
+  const row=document.createElement("div");
+  row.className="row";
+  const main=document.createElement("button");
+  main.className="row-main";
+  const isCall=isContactCat(e.cat);
+  const rightHtml = isCall && (e.phone||e.pager)
+      ? `<span class="num">${esc(e.pager?("pg "+e.pager):e.phone)}</span>`
+      : `<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>`;
+  main.innerHTML=`<div class="row-body">
+      <p class="row-title">${esc(e.title)}</p>
+      <p class="row-sub">${esc(e.subtitle || previewOf(e))}</p>
+    </div>${rightHtml}`;
+  main.onclick=()=>go({name:"entry",id:e.id});
+  row.appendChild(main);
+
+  if(isCall && (e.phone||e.pager)){
+    const acts=document.createElement("div");
+    acts.className="call-actions";
+    if(e.phone){
+      const a=document.createElement("a"); a.className="call-btn"; a.href="tel:"+dial(e.phone);
+      a.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg> Call`;
+      acts.appendChild(a);
+    }
+    const copyBtn=document.createElement("button");
+    copyBtn.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> Copy`;
+    copyBtn.onclick=(ev)=>{ev.stopPropagation(); copy(e.phone||("pager "+e.pager));};
+    acts.appendChild(copyBtn);
+    row.appendChild(acts);
+  }
+  return row;
+}
+function previewOf(e){
+  if(e.body) return stripMd(e.body).slice(0,90);
+  if(e.url) return e.url.replace(/^https?:\/\//,"");
+  return catById(e.cat).name;
+}
+
+function renderCat(catId){
+  const frag=document.createDocumentFragment();
+  const c=catById(catId);
+  const head=document.createElement("div"); head.className="cat-head";
+  head.innerHTML=`<div class="section-label">${esc(c.name)}</div>
+    <button class="gear" aria-label="Edit category"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Edit</button>`;
+  head.querySelector(".gear").onclick=()=> canEdit()?openCatSheet(c):openSignIn();
+  frag.appendChild(head);
+  const items=DATA.entries.filter(e=>e.cat===catId).sort((a,b)=>a.title.localeCompare(b.title));
+  if(!items.length){ frag.appendChild(emptyEl("Nothing here yet. Tap + to add the first one.")); return frag; }
+  const list=document.createElement("div"); list.className="list";
+  items.forEach(e=>list.appendChild(rowEl(e)));
+  frag.appendChild(list);
+  return frag;
+}
+
+function renderSearch(q){
+  const frag=document.createDocumentFragment();
+  const needle=q.toLowerCase();
+  const hits=DATA.entries.filter(e=>{
+    return [e.title,e.subtitle,e.body,e.phone,e.pager,e.ext,e.url,(e.tags||[]).join(" ")]
+      .join(" ").toLowerCase().includes(needle);
+  }).sort((a,b)=>a.title.localeCompare(b.title));
+  const label=document.createElement("div");
+  label.className="section-label"; label.textContent=`${hits.length} result${hits.length===1?"":"s"}`;
+  frag.appendChild(label);
+  if(!hits.length){ frag.appendChild(emptyEl("No matches. Try another term — or add it with +.")); return frag; }
+  const list=document.createElement("div"); list.className="list";
+  hits.forEach(e=>{
+    const r=rowEl(e);
+    const cat=document.createElement("div");
+    r.querySelector(".row-body").insertAdjacentHTML("afterbegin",`<span class="row-cat">${esc(catById(e.cat).name)}</span>`);
+    list.appendChild(r);
+  });
+  frag.appendChild(list);
+  return frag;
+}
+
+function renderEntry(id){
+  const e=DATA.entries.find(x=>x.id===id);
+  const frag=document.createDocumentFragment();
+  if(!e){ frag.appendChild(emptyEl("This entry was removed.")); return frag; }
+  const card=document.createElement("div"); card.className="detail-card";
+  let html=`<h2>${esc(e.title)}</h2>`;
+  if(e.subtitle) html+=`<p class="detail-sub">${esc(e.subtitle)}</p>`;
+
+  if(isContactCat(e.cat)){
+    if(e.phone||e.pager||e.ext){
+      html+='<div class="contact-grid">';
+      if(e.phone) html+=contactRow("Phone",e.phone);
+      if(e.pager) html+=contactRow("Pager",e.pager);
+      if(e.ext)   html+=contactRow("Ext",e.ext);
+      html+='</div>';
+    }
+    if(e.phone){
+      html+=`<div class="big-call">
+        <a class="primary" href="tel:${esc(dial(e.phone))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>Call now</a>
+        <button class="ghost" data-copy="${esc(e.phone)}">Copy</button>
+      </div>`;
+    }
+  }
+
+  if(e.body) html+=`<div class="prose">${renderMarkdown(e.body)}</div>`;
+  if(e.url) html+=`<a class="link-out" href="${esc(e.url)}" target="_blank" rel="noopener">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>
+      Open document</a>`;
+
+  if(e.tags && e.tags.length){
+    html+='<div class="tags">'+e.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")+'</div>';
+  }
+
+  html+=`<div class="meta">Last edited ${esc(timeAgo(e.updatedAt))}${e.updatedBy?` by ${esc(e.updatedBy)}`:""}</div>`;
+  if(e.history && e.history.length){
+    html+=`<div class="hist"><details><summary>Edit history (${e.history.length})</summary><ul>`+
+      e.history.slice().reverse().map(h=>`<li><b>${esc(h.by||"someone")}</b> · ${esc(new Date(h.at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))}${h.action?" · "+esc(h.action):""}</li>`).join("")+
+      `</ul></details></div>`;
+  }
+  card.innerHTML=html;
+
+  const actions=document.createElement("div");
+  actions.className="detail-actions";
+  actions.innerHTML=`<button class="btn-edit">Edit</button><button class="btn-del">Delete</button>`;
+  actions.querySelector(".btn-edit").onclick=()=> canEdit()?openSheet(e):openSignIn();
+  actions.querySelector(".btn-del").onclick=()=> canEdit()?delEntry(e):openSignIn();
+
+  card.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copy(b.getAttribute("data-copy")));
+  card.querySelectorAll("a.wikilink[data-entry]").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); go({name:"entry",id:a.getAttribute("data-entry")}); });
+  card.querySelectorAll("a.wikilink[data-newpage]").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); if(canEdit()) openSheet(null,{title:a.getAttribute("data-newpage"),cat:e.cat}); else openSignIn(); });
+
+  frag.appendChild(card);
+  frag.appendChild(actions);
+  return frag;
+}
+function contactRow(lbl,val){
+  return `<div class="contact"><span class="lbl">${lbl}</span><span class="val">${esc(val)}</span>
+    <button class="mini" data-copy="${esc(val)}">Copy</button></div>`;
+}
+function emptyEl(msg){
+  const d=document.createElement("div"); d.className="empty";
+  d.innerHTML=`<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><p>${esc(msg)}</p>`;
+  return d;
+}
+
+/* ---------- Navigation (self-contained; no History API) ---------- */
+let navStack=[];
+let preSearchView=null;
+function go(v, replace){
+  if(!replace && view) navStack.push(view);
+  view=v;
+  $("#scroll").scrollTop=0;
+  render();
+}
+function back(){
+  if(view && view.name==="search"){ exitSearch(); return; }
+  view = navStack.length ? navStack.pop() : {name:"home"};
+  $("#scroll").scrollTop=0;
+  render();
+}
+function exitSearch(){
+  const t=$("#searchInput"); if(t) t.value="";
+  $("#searchClear").classList.remove("show");
+  view = preSearchView || {name:"home"}; preSearchView=null;
+  render();
+}
+
+/* ---------- Edit sheet ---------- */
+function openSheet(entry, prefill){
+  const isNew=!entry;
+  const defCat=(prefill&&prefill.cat) || (view.name==="cat"?view.cat:(cats()[0]&&cats()[0].id));
+  const e=entry||{id:uid(), cat:defCat, title:(prefill&&prefill.title)||"", subtitle:"",phone:"",pager:"",ext:"",body:"",url:"",tags:[]};
+  const sheet=$("#sheet");
+  sheet.innerHTML=`
+    <div class="grab"></div>
+    <h3>${isNew?"Add entry":"Edit entry"}</h3>
+    <div class="field">
+      <label>Category</label>
+      <select id="f_cat">${cats().map(c=>`<option value="${esc(c.id)}" ${e.cat===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select>
+    </div>
+    <div class="field">
+      <label>Title</label>
+      <input id="f_title" value="${esc(e.title)}" placeholder="e.g. CCU Fellow / New atrial fibrillation" />
+    </div>
+    <div class="field">
+      <label>Subtitle <span class="hint" style="display:inline">(optional one-liner)</span></label>
+      <input id="f_subtitle" value="${esc(e.subtitle)}" placeholder="Short description shown in lists" />
+    </div>
+    <div id="callFields">
+      <div class="row2">
+        <div class="field"><label>Phone</label><input id="f_phone" inputmode="tel" value="${esc(e.phone)}" placeholder="e.g. x-4571" /></div>
+        <div class="field"><label>Pager</label><input id="f_pager" inputmode="numeric" value="${esc(e.pager)}" placeholder="e.g. 12345" /></div>
+      </div>
+      <div class="field"><label>Extension</label><input id="f_ext" value="${esc(e.ext)}" placeholder="Optional" /></div>
+    </div>
+    <div class="field">
+      <label>Details <span class="hint" style="display:inline">Markdown supported</span></label>
+      <textarea id="f_body" placeholder="Markdown: **bold**, # headings, - bullets, 1. lists, > quotes, [links](https://…), and [[Page Title]] to link another card.">${esc(e.body)}</textarea>
+      <div class="hint">**bold** · # heading · - bullet · [links](url) · [[Page Title]] opens another card</div>
+    </div>
+    <div class="field">
+      <label>Document / link URL <span class="hint" style="display:inline">(optional)</span></label>
+      <input id="f_url" inputmode="url" value="${esc(e.url)}" placeholder="https://…" />
+    </div>
+    <div class="field">
+      <label>Tags <span class="hint" style="display:inline">(comma-separated)</span></label>
+      <input id="f_tags" value="${esc((e.tags||[]).join(", "))}" placeholder="e.g. STEMI, on-call, urgent" />
+    </div>
+    <div class="sheet-actions">
+      <button class="cancel" id="f_cancel">Cancel</button>
+      <button class="save" id="f_save">${isNew?"Add":"Save"}</button>
+    </div>`;
+  const toggleCall=()=>{ $("#callFields").style.display = isContactCat($("#f_cat").value) ? "block":"none"; };
+  sheet.querySelector("#f_cat").onchange=toggleCall; toggleCall();
+  sheet.querySelector("#f_cancel").onclick=closeSheet;
+  sheet.querySelector("#f_save").onclick=()=>saveFromSheet(e, isNew);
+  showSheet();
+}
+function showSheet(){ $("#sheetBg").classList.add("show"); $("#sheet").classList.add("show"); }
+function closeSheet(){ $("#sheetBg").classList.remove("show"); $("#sheet").classList.remove("show"); }
+$("#sheetBg").onclick=closeSheet;
+
+async function saveFromSheet(e, isNew){
+  const g=id=>document.getElementById(id);
+  // Gather all field values FIRST (before any modal can replace the sheet)
+  const vals={
+    cat:g("f_cat").value,
+    title:g("f_title").value.trim(),
+    subtitle:g("f_subtitle").value.trim(),
+    phone:g("f_phone").value.trim(),
+    pager:g("f_pager").value.trim(),
+    ext:g("f_ext").value.trim(),
+    body:g("f_body").value.trim(),
+    url:g("f_url").value.trim(),
+    tags:g("f_tags").value.split(",").map(t=>t.trim()).filter(Boolean),
+  };
+  if(!vals.title){ toast("Add a title first"); g("f_title").focus(); return; }
+  if(!canEdit()){ openSignIn(); return; }
+  const who=editorName();
+  const updated={ ...e, ...vals, updatedAt:Date.now(), updatedBy:who };
+  updated.history=[...(e.history||[]), {by:who, at:Date.now(), action:isNew?"created":"edited"}].slice(-30);
+  try{ await DB.saveEntry(updated); }
+  catch(err){ toast("Save failed: "+errMsg(err)); return; }
+  const idx=DATA.entries.findIndex(x=>x.id===updated.id);
+  if(idx>=0) DATA.entries[idx]=updated; else DATA.entries.push(updated);
+  closeSheet();
+  go({name:"entry",id:updated.id}, true);
+  toast(isNew?"Added":"Saved");
+}
+
+function delEntry(e){
+  confirmSheet("Delete this entry?", `“${e.title}” will be removed for everyone.`, "Delete").then(async ok=>{
+    if(!ok) return;
+    try{ await DB.removeEntry(e.id); }
+    catch(err){ toast("Delete failed: "+errMsg(err)); return; }
+    DATA.entries=DATA.entries.filter(x=>x.id!==e.id);
+    go({name:"cat",cat:e.cat}, true);
+    toast("Deleted");
+  });
+}
+
+/* ---------- Auth (magic link) + account ---------- */
+function errMsg(e){ return (e && (e.message||e.error_description||e.msg)) || String(e||"error"); }
+function canEdit(){ return !CONFIGURED || !!USER; }           // preview mode edits locally; live mode needs sign-in
+function shortEmail(u){ return u && u.email ? u.email.split("@")[0] : "member"; }
+function editorName(){ return EDITOR || (USER ? shortEmail(USER) : "anonymous"); }
+async function initAuth(){
+  if(!sb) return;
+  try{ const {data}=await sb.auth.getSession(); USER=(data && data.session)?data.session.user:null; }catch(_){}
+  try{ sb.auth.onAuthStateChange((_ev,session)=>{ USER=session?session.user:null; updateAccountUI(); render(); }); }catch(_){}
+}
+function updateAccountUI(){
+  const b=$("#whoBtn"); if(!b) return;
+  if(CONFIGURED) b.textContent = USER ? (EDITOR || shortEmail(USER)) : "Sign in";
+  else b.textContent = EDITOR || "Sign name";
+}
+$("#whoBtn").onclick=()=>openAccount();
+
+function openSignIn(){
+  if(!sb){ openAccount(); return; }               // preview mode: no auth backend
+  const sheet=$("#sheet");
+  sheet.innerHTML=`
+    <div class="grab"></div>
+    <h3>Sign in to edit</h3>
+    <p style="margin:0 0 16px;color:var(--ink-2);font-size:15px;line-height:1.5">Browsing is open to everyone. To add or fix a card, sign in with your email and we'll send a one-time link.</p>
+    <div class="field">
+      <label>Email</label>
+      <input id="si_email" inputmode="email" autocomplete="email" placeholder="you@hospital.org" enterkeyhint="send" />
+    </div>
+    <div class="sheet-actions">
+      <button class="cancel" id="si_cancel">Cancel</button>
+      <button class="save" id="si_send">Send link</button>
+    </div>`;
+  const send=async()=>{
+    const email=sheet.querySelector("#si_email").value.trim();
+    if(!/.+@.+\..+/.test(email)){ toast("Enter a valid email"); return; }
+    if(CFG.ALLOWED_EMAIL_DOMAIN && !email.toLowerCase().endsWith("@"+String(CFG.ALLOWED_EMAIL_DOMAIN).toLowerCase())){ toast("Use your @"+CFG.ALLOWED_EMAIL_DOMAIN+" email"); return; }
+    try{
+      const {error}=await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin+location.pathname } });
+      if(error){ toast(errMsg(error)); return; }
+      closeSheet(); toast("Check your email for the sign-in link");
+    }catch(err){ toast("Sign-in failed: "+errMsg(err)); }
+  };
+  sheet.querySelector("#si_cancel").onclick=closeSheet;
+  sheet.querySelector("#si_send").onclick=send;
+  const inp=sheet.querySelector("#si_email");
+  inp.addEventListener("keydown",ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); send(); } });
+  showSheet();
+  setTimeout(()=>{ try{ inp.focus(); }catch(_){} },250);
+}
+function openAccount(){
+  if(CONFIGURED && !USER){ openSignIn(); return; }
+  const sheet=$("#sheet");
+  const signedIn = USER ? `<div class="hint" style="text-transform:none;letter-spacing:0;margin:-6px 2px 16px">Signed in as <b>${esc(USER.email||"member")}</b></div>` : "";
+  sheet.innerHTML=`
+    <div class="grab"></div>
+    <h3>Your name</h3>
+    ${signedIn}
+    <div class="field">
+      <label>Display name on your edits</label>
+      <input id="acc_name" value="${esc(EDITOR)}" placeholder="e.g. RM" autocomplete="name" enterkeyhint="done" />
+      <div class="hint" style="text-transform:none;letter-spacing:0">Shown next to cards you change. Leave blank to use your email name.</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="cancel" id="acc_cancel">Cancel</button>
+      <button class="save" id="acc_save">Save</button>
+    </div>
+    ${USER?`<button class="cat-del" id="acc_out">Sign out</button>`:""}`;
+  sheet.querySelector("#acc_cancel").onclick=closeSheet;
+  sheet.querySelector("#acc_save").onclick=()=>{ EDITOR=sheet.querySelector("#acc_name").value.trim(); localStorageSet("cardsref_editor", EDITOR); updateAccountUI(); closeSheet(); toast("Saved"); };
+  if(USER){ const out=sheet.querySelector("#acc_out"); if(out) out.onclick=async()=>{ try{ await sb.auth.signOut(); }catch(_){} closeSheet(); toast("Signed out"); }; }
+  showSheet();
+  setTimeout(()=>{ try{ sheet.querySelector("#acc_name").focus(); }catch(_){} },250);
+}
+function confirmSheet(title, msg, dangerLabel){
+  return new Promise(resolve=>{
+    const sheet=$("#sheet");
+    sheet.innerHTML=`
+      <div class="grab"></div>
+      <h3>${esc(title)}</h3>
+      <p style="margin:0 0 18px;color:var(--ink-2);font-size:15px;line-height:1.5">${esc(msg||"")}</p>
+      <div class="sheet-actions">
+        <button class="cancel" id="c_cancel">Cancel</button>
+        <button class="save" id="c_ok" style="background:var(--urgent)">${esc(dangerLabel||"Confirm")}</button>
+      </div>`;
+    const done=v=>{ closeSheet(); resolve(v); };
+    sheet.querySelector("#c_cancel").onclick=()=>done(false);
+    sheet.querySelector("#c_ok").onclick=()=>done(true);
+    showSheet();
+  });
+}
+
+/* ---------- Category editor ---------- */
+function openCatSheet(cat){
+  const isNew=!cat;
+  const model = cat ? {...cat} : {id:"cat_"+uid(), name:"", plural:"items", icon:"star", color:CAT_COLORS[cats().length % CAT_COLORS.length], kind:"content"};
+  const sheet=$("#sheet");
+  const iconGrid = Object.keys(ICONS).map(k=>`<button type="button" class="icon-opt${model.icon===k?" sel":""}" data-icon="${k}">${iconSvg(k)}</button>`).join("");
+  const swatches = CAT_COLORS.map(c=>`<button type="button" class="swatch${model.color===c?" sel":""}" data-color="${c}" style="background:${c}" aria-label="color"></button>`).join("");
+  const idx = cats().findIndex(c=>c.id===model.id);
+  sheet.innerHTML=`
+    <div class="grab"></div>
+    <h3>${isNew?"New category":"Edit category"}</h3>
+    <div class="field">
+      <label>Name</label>
+      <input id="c_name" value="${esc(model.name)}" placeholder="e.g. Order Sets" />
+    </div>
+    <div class="field">
+      <label>Count label <span class="hint" style="display:inline">(plural noun)</span></label>
+      <input id="c_plural" value="${esc(model.plural)}" placeholder="e.g. order sets" />
+    </div>
+    <div class="field">
+      <label>Type</label>
+      <div class="seg" id="c_kind">
+        <button type="button" data-kind="content" class="${model.kind!=="contact"?"sel":""}">Notes / links</button>
+        <button type="button" data-kind="contact" class="${model.kind==="contact"?"sel":""}">Contacts (phone)</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Icon</label>
+      <div class="icon-grid" id="c_icons">${iconGrid}</div>
+    </div>
+    <div class="field">
+      <label>Color</label>
+      <div class="swatches" id="c_colors">${swatches}</div>
+    </div>
+    ${isNew?"":`<div class="cat-tools">
+      <button type="button" id="c_up" ${idx<=0?"disabled":""}>↑ Move up</button>
+      <button type="button" id="c_down" ${idx>=cats().length-1?"disabled":""}>↓ Move down</button>
+    </div>`}
+    <div class="sheet-actions">
+      <button class="cancel" id="c_cancel">Cancel</button>
+      <button class="save" id="c_save">${isNew?"Add category":"Save"}</button>
+    </div>
+    ${isNew?"":`<button class="cat-del" id="c_del">Delete category</button>`}`;
+  sheet.querySelectorAll("#c_icons .icon-opt").forEach(b=>b.onclick=()=>{ model.icon=b.dataset.icon; sheet.querySelectorAll("#c_icons .icon-opt").forEach(x=>x.classList.remove("sel")); b.classList.add("sel"); });
+  sheet.querySelectorAll("#c_colors .swatch").forEach(b=>b.onclick=()=>{ model.color=b.dataset.color; sheet.querySelectorAll("#c_colors .swatch").forEach(x=>x.classList.remove("sel")); b.classList.add("sel"); });
+  sheet.querySelectorAll("#c_kind button").forEach(b=>b.onclick=()=>{ model.kind=b.dataset.kind; sheet.querySelectorAll("#c_kind button").forEach(x=>x.classList.remove("sel")); b.classList.add("sel"); });
+  sheet.querySelector("#c_cancel").onclick=closeSheet;
+  sheet.querySelector("#c_save").onclick=()=>saveCat(model, isNew);
+  if(!isNew){
+    const up=sheet.querySelector("#c_up"), down=sheet.querySelector("#c_down"), del=sheet.querySelector("#c_del");
+    if(up) up.onclick=()=>moveCat(model.id,-1);
+    if(down) down.onclick=()=>moveCat(model.id,1);
+    if(del) del.onclick=()=>delCat(model);
+  }
+  showSheet();
+}
+async function saveCat(model, isNew){
+  const name=$("#c_name").value.trim();
+  if(!name){ toast("Name the category"); $("#c_name").focus(); return; }
+  if(!canEdit()){ openSignIn(); return; }
+  model.name=name;
+  model.plural=$("#c_plural").value.trim()||"items";
+  if(!DATA.cats || !DATA.cats.length) DATA.cats=DEFAULT_CATS.slice();
+  const i=DATA.cats.findIndex(c=>c.id===model.id);
+  if(i<0 && model.position==null) model.position=DATA.cats.length;
+  try{ await DB.saveCat(model); }
+  catch(err){ toast("Save failed: "+errMsg(err)); return; }
+  if(i>=0) DATA.cats[i]=model; else DATA.cats.push(model);
+  closeSheet();
+  go({name:"cat",cat:model.id}, true);
+  toast(isNew?"Category added":"Saved");
+}
+function delCat(model){
+  if(cats().length<=1){ toast("Keep at least one category"); return; }
+  const n=countIn(model.id);
+  const msg = n ? `This category and its ${n} ${n===1?"entry":"entries"} will be removed for everyone.` : "This category will be removed for everyone.";
+  confirmSheet("Delete category?", msg, "Delete").then(async ok=>{
+    if(!ok) return;
+    try{ await DB.removeCat(model.id); }
+    catch(err){ toast("Delete failed: "+errMsg(err)); return; }
+    if(!DATA.cats) DATA.cats=DEFAULT_CATS.slice();
+    DATA.cats=DATA.cats.filter(c=>c.id!==model.id);
+    DATA.entries=DATA.entries.filter(e=>e.cat!==model.id);
+    closeSheet();
+    go({name:"home"}, true);
+    toast("Category deleted");
+  });
+}
+async function moveCat(id, dir){
+  if(!DATA.cats || !DATA.cats.length) DATA.cats=DEFAULT_CATS.slice();
+  const arr=DATA.cats.slice();
+  const i=arr.findIndex(c=>c.id===id);
+  const j=i+dir;
+  if(i<0 || j<0 || j>=arr.length) return;
+  const tmp=arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+  arr.forEach((c,k)=>c.position=k);
+  try{ await DB.setCatPositions(arr); }
+  catch(err){ toast("Reorder failed: "+errMsg(err)); return; }
+  DATA.cats=arr;
+  openCatSheet(DATA.cats[j]);
+}
+
+/* ---------- Copy ---------- */
+async function copy(text){
+  try{ await navigator.clipboard.writeText(text); toast("Copied"); }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
+    try{document.execCommand("copy"); toast("Copied");}catch(_){toast("Copy failed");}
+    document.body.removeChild(ta);
+  }
+}
+
+/* ---------- Search wiring ---------- */
+const si=$("#searchInput");
+si.addEventListener("input",()=>{
+  const q=si.value.trim();
+  $("#searchClear").classList.toggle("show", q.length>0);
+  if(q){ if(!view || view.name!=="search"){ preSearchView=view||{name:"home"}; } view={name:"search",q}; render(); }
+  else { exitSearch(); }
+});
+$("#searchClear").onclick=()=>{ exitSearch(); si.blur(); };
+
+$("#backBtn").onclick=()=>back();
+$("#fabBtn").onclick=()=> canEdit()?openSheet(null):openSignIn();
+
+/* ---------- Seed content (editable scaffolding) ---------- */
+function seed(){
+  const now=Date.now();
+  const mk=(cat,title,o={})=>({id:uid(),cat,title,subtitle:o.subtitle||"",phone:o.phone||"",pager:o.pager||"",ext:o.ext||"",body:o.body||"",url:o.url||"",tags:o.tags||[],updatedAt:now,updatedBy:"seed",history:[{by:"seed",at:now,action:"created"}]});
+  return {
+    meta:{title:"CardsRef", sub:"Cardiology Consult Reference"},
+    cats:DEFAULT_CATS.slice(),
+    entries:[
+      mk("call","CCU Fellow",{subtitle:"Cardiac ICU coverage & escalation",phone:"x-0000",pager:"00000",tags:["on-call","CCU"]}),
+      mk("call","Interventional / Cath Lab",{subtitle:"STEMI activation · urgent PCI",phone:"x-0000",pager:"00000",body:"Activate for confirmed STEMI. Edit to add your program's exact activation line and after-hours pathway.",tags:["STEMI","urgent"]}),
+      mk("call","EP Fellow",{subtitle:"Arrhythmia · device interrogation",phone:"x-0000",pager:"00000",tags:["EP","devices"]}),
+      mk("call","Echo Lab / Reading Room",{subtitle:"TTE/TEE scheduling · wet reads",phone:"x-0000",tags:["echo"]}),
+      mk("call","Heart Failure / Transplant",{subtitle:"Advanced HF · MCS · transplant eval",phone:"x-0000",pager:"00000",tags:["HF"]}),
+      mk("call","Cardiac Surgery",{subtitle:"Valve · CABG · surgical consults",phone:"x-0000",pager:"00000"}),
+      mk("call","Attending on call",{subtitle:"Escalation / staffing",phone:"x-0000",tags:["escalation"]}),
+
+      mk("consult","New atrial fibrillation",{subtitle:"Rate vs rhythm · anticoagulation",body:"Placeholder scaffold — replace with your program's pathway.\n- Confirm rhythm and hemodynamic stability\n- Gather: onset/duration, triggers, prior episodes, meds, renal/hepatic function\n- Rate vs rhythm decision per stability and symptoms\n- Anticoagulation: apply your institution's risk-stratification tool\n- Document reasoning and disposition\n\nRelated: [[Troponin elevation]]",tags:["AF","arrhythmia"]}),
+      mk("consult","Troponin elevation",{subtitle:"Ischemic vs non-ischemic",body:"Scaffold — edit with your program's approach.\n- Frame the pretest probability and clinical context\n- Trend the biomarker; correlate with ECG and symptoms\n- Differential: type 1 vs type 2 vs non-ischemic causes\n- Decide monitoring level and who to loop in",tags:["ACS","troponin"]}),
+      mk("consult","Syncope",{subtitle:"Risk stratification & disposition",body:"Scaffold — edit for local practice.\n- History/exam and ECG first\n- Separate benign from high-risk features\n- Decide admit vs monitored vs discharge with follow-up",tags:["syncope"]}),
+      mk("consult","Pre-operative cardiac evaluation",{subtitle:"Peri-operative risk",body:"Scaffold — add your program's preferred framework and any local order sets.",tags:["pre-op"]}),
+      mk("consult","Chest pain triage from the floor",{subtitle:"When to escalate",body:"Scaffold — edit with escalation criteria and who to call.",tags:["chest pain","triage"]}),
+
+      mk("docs","Cardiology consult note template",{subtitle:"Standard note skeleton",url:"",body:"Paste the link to your shared note template (Drive/EMR smartphrase). Edit this entry and drop the URL in the link field.",tags:["template","notes"]}),
+      mk("docs","Anticoagulation drip protocols",{subtitle:"Heparin / bivalirudin references",body:"Link your institution's official protocol here — do not rely on memorized numbers.",tags:["anticoagulation"]}),
+      mk("docs","ACLS algorithms",{subtitle:"Code references",url:"https://cpr.heart.org",tags:["ACLS","code"]}),
+      mk("docs","ACC/AHA guideline hub",{subtitle:"Guideline quick links",url:"https://www.acc.org/guidelines",tags:["guidelines"]}),
+
+      mk("workflow","Place a cardiology consult",{subtitle:"Intake steps",body:"## Intake steps\n1. Confirm the **exact question** the primary team is asking\n2. Gather chart, labs, imaging, and a callback number\n3. Enter the consult order and page the covering fellow\n4. Document recommendations and follow-up\n\n> Tip: tap a linked page below to jump straight there.\n\nRelated pages: [[Order a TTE / TEE]] · [[Sign out the consult list]]",tags:["intake"]}),
+      mk("workflow","Order a TTE / TEE",{subtitle:"Echo request steps",body:"Edit with your EMR-specific order path, indications, and how urgent reads are requested.",tags:["echo"]}),
+      mk("workflow","Request device interrogation",{subtitle:"Pacemaker / ICD via EP",body:"Edit with the EP pathway for inpatient interrogation and after-hours coverage.",tags:["EP","devices"]}),
+      mk("workflow","Sign out the consult list",{subtitle:"Handoff expectations",body:"Scaffold — add your service's handoff format and what a good sign-out includes.",tags:["handoff"]}),
+    ]
+  };
+}
+
+/* ---------- Realtime: refresh when anyone edits (skips while a sheet is open) ---------- */
+let refreshTimer=null;
+function scheduleRefresh(){ clearTimeout(refreshTimer); refreshTimer=setTimeout(refreshFromServer, 400); }
+async function refreshFromServer(){
+  if($("#sheet").classList.contains("show")) return;    // don't disrupt an active edit
+  try{
+    const {cats:cs, entries:es}=await DB.loadAll();
+    if(cs && cs.length) DATA.cats=cs;
+    DATA.entries=es||[];
+    render();
+  }catch(_){}
+}
+function initRealtime(){
+  if(!sb) return;
+  try{
+    sb.channel("cardsref-changes")
+      .on("postgres_changes",{event:"*",schema:"public",table:"entries"}, scheduleRefresh)
+      .on("postgres_changes",{event:"*",schema:"public",table:"categories"}, scheduleRefresh)
+      .subscribe();
+  }catch(_){}
+}
+
+/* ---------- Boot: paint instantly, then hydrate from the backend ---------- */
+async function boot(){
+  EDITOR = localStorageGet("cardsref_editor") || "";
+  DATA = { meta:{ title:CFG.APP_TITLE||"CardsRef", sub:CFG.APP_SUBTITLE||"Cardiology Consult Reference" },
+           cats:DEFAULT_CATS.slice(), entries:[] };
+  view = {name:"home"};
+  render();
+  await initAuth();
+  updateAccountUI();
+  try{
+    const {cats:cs, entries:es}=await DB.loadAll();
+    DATA.cats = (cs && cs.length) ? cs : DEFAULT_CATS.slice();
+    DATA.entries = es || [];
+    render();
+  }catch(err){ toast("Couldn't load data: "+errMsg(err)); }
+  initRealtime();
+}
+window.addEventListener("error", ev=>{ try{ toast("Error: "+((ev.error&&ev.error.message)||ev.message||"script")); }catch(_){} });
+boot();
+</script>
+</body>
+</html>

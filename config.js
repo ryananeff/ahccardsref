@@ -14,9 +14,20 @@ window.CARDSREF_CONFIG = {
 
   // Branding shown in the header
   APP_TITLE: "AHC CardsRef",
-  APP_SUBTITLE: "AHC Cardiology Consult Reference",
+  APP_SUBTITLE: "Cardiology Consult Reference",
 
-  // Optional: restrict sign-in to one email domain, e.g. "hospital.org".
-  // Leave "" to allow any email address.
+  // ---- Sign-in methods ----
+  // Turn on the ones you want. OAuth and password need NO email sending at all,
+  // which is the way to go if SMTP is blocked or your provider suspended you.
+  // If all are false, magic link is used as the fallback.
+  AUTH_MICROSOFT: true,    // Microsoft Entra ID / Azure AD — for Microsoft 365 institutions
+  AUTH_GOOGLE: false,      // Google OAuth — for Google Workspace institutions
+  AUTH_PASSWORD: false,     // Email + password (disable "Confirm email" in Supabase)
+  AUTH_MAGIC_LINK: false,  // Emailed one-time link — requires working SMTP
+
+  // Optional: restrict editing to one email domain, e.g. "hospital.org".
+  // Enforced after sign-in for every method (and passed to Google as a hint).
+  // For Microsoft, ALSO set the Azure Tenant URL in Supabase so only your
+  // organization's tenant can authenticate at all. Leave "" to allow any address.
   ALLOWED_EMAIL_DOMAIN: "atlantichealth.org"
 };

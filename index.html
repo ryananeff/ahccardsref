@@ -1170,7 +1170,7 @@ function seed(){
   const now=Date.now();
   const mk=(cat,title,o={})=>({id:uid(),cat,title,subtitle:o.subtitle||"",phone:o.phone||"",pager:o.pager||"",ext:o.ext||"",body:o.body||"",url:o.url||"",tags:o.tags||[],updatedAt:now,updatedBy:"seed",history:[{by:"seed",at:now,action:"created"}]});
   return {
-    meta:{title:"CardsRef", sub:"Cardiology Consult Reference"},
+    meta:{title:"CardsRef", sub:"Cardiology Fellows Reference"},
     cats:DEFAULT_CATS.slice(),
     entries:[
       mk("call","CCU Fellow",{subtitle:"Cardiac ICU coverage & escalation",phone:"x-0000",pager:"00000",tags:["on-call","CCU"]}),

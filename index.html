@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0f172a" />
-<title>AHC CardsRef — Cardiology Pocket Reference</title>
+<title>CardsRef — Cardiology Pocket Reference</title>
 <style>
   :root{
     --bg:#f4f6f8; --surface:#ffffff; --surface-2:#f8fafc;
@@ -268,6 +268,16 @@
   .cat-del{width:100%; border:none; background:var(--urgent-tint); color:var(--urgent); font-weight:800;
     border-radius:12px; padding:13px; font-size:15px; margin-top:4px}
 
+  /* Sign-in controls */
+  .oauth-btn{width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+    border:1px solid var(--line-2); background:var(--surface); color:var(--ink);
+    border-radius:12px; padding:14px; font-size:15px; font-weight:700; margin-bottom:14px}
+  .oauth-btn:active{background:var(--surface-2)}
+  .or-div{display:flex; align-items:center; gap:12px; margin:0 0 14px; color:var(--ink-3); font-size:13px}
+  .or-div::before,.or-div::after{content:""; flex:1; height:1px; background:var(--line)}
+  .link-btn{width:100%; border:none; background:none; color:var(--ink-2); font-size:14px;
+    font-weight:600; padding:12px 0 2px}
+
   @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
   :focus-visible{outline:2px solid var(--primary); outline-offset:2px}
 </style>
@@ -280,8 +290,8 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         Back
       </button>
-      <div class="brand" id="brandTitle">AHC CardsRef<small id="brandSub">Cardiology Consult Reference</small></div>
-      <button class="who" id="whoBtn">Guest</button>
+      <div class="brand" id="brandTitle">CardsRef<small id="brandSub">Cardiology Consult Reference</small></div>
+      <button class="who" id="whoBtn">Sign name</button>
     </div>
     <label class="search" id="searchWrap">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -532,13 +542,6 @@ function render(){
 
 function renderHome(){
   const frag=document.createDocumentFragment();
-  const banner=document.createElement("div");
-  banner.className="banner";
-  banner.innerHTML=(CONFIGURED
-      ? '<b>Team-editable.</b> Anyone can browse — sign in to add or fix a card. '
-      : '<b>Preview mode.</b> Not connected to Supabase yet, so edits stay on this device only. ')
-    + 'Community-maintained reference — verify against official program sources; not a substitute for clinical judgment.';
-  frag.appendChild(banner);
 
   const tiles=document.createElement("div");
   tiles.className="tiles";
@@ -821,14 +824,31 @@ function delEntry(e){
 }
 
 /* ---------- Auth (magic link) + account ---------- */
-function errMsg(e){ return (e && (e.message||e.error_description||e.msg)) || String(e||"error"); }
+function errMsg(e){
+  if(!e) return "error";
+  try{ console.error("[CardsRef]", e); }catch(_){}
+  let s = e.message || e.error_description || e.msg || String(e);
+  if(e.code) s = "["+e.code+"] "+s;
+  if(e.hint) s += " — "+e.hint;
+  if(String(e.code)==="42501") s += " (run fix-grants.sql)";
+  return s.length>240 ? s.slice(0,240)+"…" : s;
+}
 function canEdit(){ return !CONFIGURED || !!USER; }           // preview mode edits locally; live mode needs sign-in
 function shortEmail(u){ return u && u.email ? u.email.split("@")[0] : "member"; }
 function editorName(){ return EDITOR || (USER ? shortEmail(USER) : "anonymous"); }
+async function enforceDomain(){
+  if(!sb || !USER || !CFG.ALLOWED_EMAIL_DOMAIN) return true;
+  if(domainOk(USER.email)) return true;
+  try{ await sb.auth.signOut(); }catch(_){}
+  USER=null;
+  toast("Only @"+CFG.ALLOWED_EMAIL_DOMAIN+" accounts can edit");
+  return false;
+}
 async function initAuth(){
   if(!sb) return;
   try{ const {data}=await sb.auth.getSession(); USER=(data && data.session)?data.session.user:null; }catch(_){}
-  try{ sb.auth.onAuthStateChange((_ev,session)=>{ USER=session?session.user:null; updateAccountUI(); render(); }); }catch(_){}
+  await enforceDomain();
+  try{ sb.auth.onAuthStateChange(async(_ev,session)=>{ USER=session?session.user:null; await enforceDomain(); updateAccountUI(); render(); }); }catch(_){}
 }
 function updateAccountUI(){
   const b=$("#whoBtn"); if(!b) return;
@@ -837,37 +857,124 @@ function updateAccountUI(){
 }
 $("#whoBtn").onclick=()=>openAccount();
 
+/* Which sign-in methods are enabled (config-driven; magic link is the fallback default) */
+function authMethods(){
+  const g=!!CFG.AUTH_GOOGLE, ms=!!CFG.AUTH_MICROSOFT, p=!!CFG.AUTH_PASSWORD, m=!!CFG.AUTH_MAGIC_LINK;
+  if(!g && !ms && !p && !m) return {google:false, microsoft:false, password:false, magic:true};
+  return {google:g, microsoft:ms, password:p, magic:m};
+}
+function domainOk(email){
+  const d=CFG.ALLOWED_EMAIL_DOMAIN;
+  if(!d) return true;
+  return String(email||"").toLowerCase().endsWith("@"+String(d).toLowerCase());
+}
+function redirectTo(){ return location.origin+location.pathname; }
+
 function openSignIn(){
   if(!sb){ openAccount(); return; }               // preview mode: no auth backend
+  const M=authMethods();
   const sheet=$("#sheet");
+  const domainNote = CFG.ALLOWED_EMAIL_DOMAIN ? ` Use your @${esc(CFG.ALLOWED_EMAIL_DOMAIN)} address.` : "";
+  const googleBlock = M.google ? `
+    <button class="oauth-btn" id="si_google">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.7v3h3.9c2.3-2.1 3.5-5.2 3.5-8.9z"/><path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.9-3c-1.1.7-2.5 1.2-4 1.2-3.1 0-5.700-2.1-6.6-4.9H1.4v3.1A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.4 14.4a7.2 7.2 0 0 1 0-4.6V6.7H1.4a12 12 0 0 0 0 10.8l4-3.1z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.4.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.4 6.7l4 3.1C6.3 6.9 8.9 4.8 12 4.8z"/></svg>
+      Continue with Google
+    </button>` : "";
+  const microsoftBlock = M.microsoft ? `
+    <button class="oauth-btn" id="si_ms">
+      <svg viewBox="0 0 23 23" width="17" height="17" aria-hidden="true"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+      Continue with Microsoft
+    </button>` : "";
+  const divider = ((M.google||M.microsoft) && (M.password || M.magic)) ? `<div class="or-div"><span>or</span></div>` : "";
+  const emailBlock = (M.password || M.magic) ? `
+    <div class="field">
+      <label>Email</label>
+      <input id="si_email" inputmode="email" autocomplete="email" placeholder="you@hospital.org" enterkeyhint="${M.password?"next":"send"}" />
+    </div>` : "";
+  const pwBlock = M.password ? `
+    <div class="field">
+      <label>Password</label>
+      <input id="si_pw" type="password" autocomplete="current-password" placeholder="••••••••" enterkeyhint="go" />
+    </div>
+    <div class="sheet-actions">
+      <button class="cancel" id="si_signup">Create account</button>
+      <button class="save" id="si_pwgo">Sign in</button>
+    </div>` : "";
+  const magicBlock = M.magic ? `
+    <div class="sheet-actions">
+      ${M.password?"":'<button class="cancel" id="si_cancel">Cancel</button>'}
+      <button class="${M.password?"cancel":"save"}" id="si_send" ${M.password?'style="flex:1"':""}>Email me a link</button>
+    </div>` : "";
+  const closeRow = (!M.magic && M.password) ? "" : "";
   sheet.innerHTML=`
     <div class="grab"></div>
     <h3>Sign in to edit</h3>
-    <p style="margin:0 0 16px;color:var(--ink-2);font-size:15px;line-height:1.5">Browsing is open to everyone. To add or fix a card, sign in with your email and we'll send a one-time link.</p>
-    <div class="field">
-      <label>Email</label>
-      <input id="si_email" inputmode="email" autocomplete="email" placeholder="you@hospital.org" enterkeyhint="send" />
-    </div>
-    <div class="sheet-actions">
-      <button class="cancel" id="si_cancel">Cancel</button>
-      <button class="save" id="si_send">Send link</button>
-    </div>`;
-  const send=async()=>{
-    const email=sheet.querySelector("#si_email").value.trim();
-    if(!/.+@.+\..+/.test(email)){ toast("Enter a valid email"); return; }
-    if(CFG.ALLOWED_EMAIL_DOMAIN && !email.toLowerCase().endsWith("@"+String(CFG.ALLOWED_EMAIL_DOMAIN).toLowerCase())){ toast("Use your @"+CFG.ALLOWED_EMAIL_DOMAIN+" email"); return; }
-    try{
-      const {error}=await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin+location.pathname } });
-      if(error){ toast(errMsg(error)); return; }
-      closeSheet(); toast("Check your email for the sign-in link");
-    }catch(err){ toast("Sign-in failed: "+errMsg(err)); }
-  };
-  sheet.querySelector("#si_cancel").onclick=closeSheet;
-  sheet.querySelector("#si_send").onclick=send;
-  const inp=sheet.querySelector("#si_email");
-  inp.addEventListener("keydown",ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); send(); } });
+    <p style="margin:0 0 16px;color:var(--ink-2);font-size:15px;line-height:1.5">Browsing is open to everyone — signing in is only needed to add or fix a card.${domainNote}</p>
+    ${googleBlock}${microsoftBlock}${divider}${emailBlock}${pwBlock}${magicBlock}
+    ${(M.password && !M.magic) ? "" : ""}
+    <button class="link-btn" id="si_close">Cancel</button>`;
+
+  const getEmail=()=>{ const el=sheet.querySelector("#si_email"); return el?el.value.trim():""; };
+
+  if(M.google){
+    sheet.querySelector("#si_google").onclick=async()=>{
+      try{
+        const opts={ redirectTo:redirectTo() };
+        if(CFG.ALLOWED_EMAIL_DOMAIN) opts.queryParams={ hd:CFG.ALLOWED_EMAIL_DOMAIN };
+        const {error}=await sb.auth.signInWithOAuth({ provider:"google", options:opts });
+        if(error) toast(errMsg(error));
+      }catch(err){ toast("Sign-in failed: "+errMsg(err)); }
+    };
+  }
+  if(M.microsoft){
+    sheet.querySelector("#si_ms").onclick=async()=>{
+      try{
+        // Supabase requires the `email` scope for Azure — without it sign-in fails
+        // because Auth can't get a verified address back from Entra.
+        const opts={ redirectTo:redirectTo(), scopes:"email" };
+        const {error}=await sb.auth.signInWithOAuth({ provider:"azure", options:opts });
+        if(error) toast(errMsg(error));
+      }catch(err){ toast("Sign-in failed: "+errMsg(err)); }
+    };
+  }
+  if(M.password){
+    const pwGo=async(mode)=>{
+      const email=getEmail(), pw=sheet.querySelector("#si_pw").value;
+      if(!/.+@.+\..+/.test(email)){ toast("Enter a valid email"); return; }
+      if(!domainOk(email)){ toast("Use your @"+CFG.ALLOWED_EMAIL_DOMAIN+" email"); return; }
+      if(pw.length<8){ toast("Password must be at least 8 characters"); return; }
+      try{
+        const {error} = mode==="signup"
+          ? (await sb.auth.signUp({ email, password:pw }))
+          : (await sb.auth.signInWithPassword({ email, password:pw }));
+        if(error){ toast(errMsg(error)); return; }
+        closeSheet();
+        toast(mode==="signup" ? "Account created — you're signed in" : "Signed in");
+      }catch(err){ toast("Sign-in failed: "+errMsg(err)); }
+    };
+    sheet.querySelector("#si_pwgo").onclick=()=>pwGo("signin");
+    sheet.querySelector("#si_signup").onclick=()=>pwGo("signup");
+    sheet.querySelector("#si_pw").addEventListener("keydown",ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); pwGo("signin"); } });
+  }
+  if(M.magic){
+    const send=async()=>{
+      const email=getEmail();
+      if(!/.+@.+\..+/.test(email)){ toast("Enter a valid email"); return; }
+      if(!domainOk(email)){ toast("Use your @"+CFG.ALLOWED_EMAIL_DOMAIN+" email"); return; }
+      try{
+        const {error}=await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo:redirectTo() } });
+        if(error){ toast(errMsg(error)); return; }
+        closeSheet(); toast("Check your email for the sign-in link");
+      }catch(err){ toast("Sign-in failed: "+errMsg(err)); }
+    };
+    sheet.querySelector("#si_send").onclick=send;
+    const c=sheet.querySelector("#si_cancel"); if(c) c.onclick=closeSheet;
+    const em=sheet.querySelector("#si_email");
+    if(em && !M.password) em.addEventListener("keydown",ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); send(); } });
+  }
+  sheet.querySelector("#si_close").onclick=closeSheet;
   showSheet();
-  setTimeout(()=>{ try{ inp.focus(); }catch(_){} },250);
+  setTimeout(()=>{ try{ const em=sheet.querySelector("#si_email"); if(em) em.focus(); }catch(_){} },250);
 }
 function openAccount(){
   if(CONFIGURED && !USER){ openSignIn(); return; }

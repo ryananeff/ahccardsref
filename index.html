@@ -428,7 +428,7 @@ function catById(id){ return cats().find(c=>c.id===id) || {id:id||"other", name:
 function isContactCat(id){ return catById(id).kind==="contact"; }
 
 /* ---------- App state ---------- */
-let DATA = {meta:{title:"CardsRef", sub:"Cardiology Consult Reference"}, cats:DEFAULT_CATS.slice(), entries:[]};
+let DATA = {meta:{title:"CardsRef", sub:"Cardiology Fellows Reference"}, cats:DEFAULT_CATS.slice(), entries:[]};
 let EDITOR = "";
 let view = {name:"home"}; // {name:'home'} | {name:'cat', cat} | {name:'entry', id} | {name:'search', q}
 
@@ -1225,7 +1225,7 @@ function initRealtime(){
 /* ---------- Boot: paint instantly, then hydrate from the backend ---------- */
 async function boot(){
   EDITOR = localStorageGet("cardsref_editor") || "";
-  DATA = { meta:{ title:CFG.APP_TITLE||"CardsRef", sub:CFG.APP_SUBTITLE||"Cardiology Consult Reference" },
+  DATA = { meta:{ title:CFG.APP_TITLE||"CardsRef", sub:CFG.APP_SUBTITLE||"Cardiology Fellows Reference" },
            cats:DEFAULT_CATS.slice(), entries:[] };
   view = {name:"home"};
   render();

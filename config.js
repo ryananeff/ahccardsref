@@ -14,7 +14,7 @@ window.CARDSREF_CONFIG = {
 
   // Branding shown in the header
   APP_TITLE: "AHC CardsRef",
-  APP_SUBTITLE: "Cardiology Consult Reference",
+  APP_SUBTITLE: "Cardiology Fellows Reference",
 
   // ---- Sign-in methods ----
   // Turn on the ones you want. OAuth and password need NO email sending at all,

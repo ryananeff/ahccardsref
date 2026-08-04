@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#111a2b" media="(prefers-color-scheme: dark)" />
-<title>CardsRef — Cardiology Pocket Reference</title>
+<title>AHC CardsRef — Cardiology Pocket Reference</title>
 <style>
   :root{
     color-scheme: light;
@@ -252,6 +252,17 @@
   .prose blockquote{margin:0 0 12px; padding:2px 14px; border-left:3px solid var(--primary); color:var(--ink-2)}
   .prose hr{border:none; border-top:1px solid var(--line); margin:16px 0}
   .prose strong{font-weight:800} .prose em{font-style:italic} .prose del{opacity:.6}
+  .prose .md-img{max-width:100%; height:auto; border-radius:10px; margin:10px 0; display:block;
+    border:1px solid var(--line); background:var(--surface-2)}
+  /* Editor image toolbar */
+  .md-toolbar{display:flex; align-items:center; gap:10px; margin-top:8px}
+  .md-tool{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink-2); border-radius:10px; padding:8px 12px;
+    font-size:13px; font-weight:700}
+  .md-tool:active{background:var(--surface)}
+  .md-upstatus{font-size:12.5px; color:var(--ink-3); font-weight:600}
+  .md-upstatus.busy{color:var(--primary-ink)} .md-upstatus.ok{color:var(--workflow)}
+  .phi-warn{color:var(--urgent); font-weight:600}
   .prose a.wikilink{display:inline; text-decoration:none; font-weight:700; color:var(--primary-ink);
     border-bottom:1px solid color-mix(in srgb,var(--primary) 40%,transparent)}
   .prose a.wikilink::before{content:"› "; font-weight:800; opacity:.65}
@@ -313,7 +324,7 @@
         Back
       </button>
       <div class="brand" id="brandTitle">CardsRef<small id="brandSub">Cardiology Fellows Reference</small></div>
-      <button class="who" id="whoBtn">Sign in</button>
+      <button class="who" id="whoBtn">Sign name</button>
     </div>
     <label class="search" id="searchWrap">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -398,6 +409,66 @@ const memDB = {
 };
 const DB = CONFIGURED ? supaDB : memDB;
 
+/* ---------- Image uploads ---------- */
+const IMG_BUCKET = CFG.IMAGE_BUCKET || "card-images";
+function fileToBitmap(file){
+  if(window.createImageBitmap){
+    return createImageBitmap(file, {imageOrientation:"from-image"})
+      .catch(()=>createImageBitmap(file));
+  }
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>res(img); img.onerror=()=>rej(new Error("decode failed"));
+    img.src=URL.createObjectURL(file);
+  });
+}
+/* Downscale + JPEG-compress large photos; leave small PNG/WebP (transparency) and GIF (animation) untouched */
+async function prepImage(file){
+  const type=(file.type||"").toLowerCase();
+  const big=file.size > 900*1024;
+  const keepAsIs = /gif/.test(type) || (!big && /(png|webp)/.test(type));
+  if(keepAsIs){
+    const ext=(type.split("/")[1]||"png").replace("jpeg","jpg").replace("svg+xml","png");
+    return {blob:file, ext};
+  }
+  try{
+    const bmp=await fileToBitmap(file);
+    const w0=bmp.width||bmp.naturalWidth, h0=bmp.height||bmp.naturalHeight;
+    const maxDim=1600; let w=w0, h=h0;
+    if(Math.max(w,h)>maxDim){ const s=maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+    const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+    cv.getContext("2d").drawImage(bmp,0,0,w,h);
+    if(bmp.close) bmp.close();
+    const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",0.82));
+    if(blob && blob.size) return {blob, ext:"jpg"};
+  }catch(_){}
+  return {blob:file, ext:(type.split("/")[1]||"jpg").replace("jpeg","jpg")};
+}
+function blobToDataURL(blob){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(new Error("read failed")); r.readAsDataURL(blob); });
+}
+async function uploadImage(file){
+  const type=(file.type||"").toLowerCase();
+  if(!/^image\//.test(type) && !/\.(png|jpe?g|gif|webp|heic|heif)$/i.test(file.name||"")) throw new Error("That's not an image");
+  if(file.size > 20*1024*1024) throw new Error("Image is too large (max 20 MB)");
+  const {blob, ext}=await prepImage(file);
+  if(CONFIGURED){
+    const path=uid()+"."+ext;
+    const {error}=await sb.storage.from(IMG_BUCKET).upload(path, blob, {contentType:blob.type||"image/jpeg", upsert:false});
+    if(error) throw error;
+    const {data}=sb.storage.from(IMG_BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+  }
+  return await blobToDataURL(blob); // preview mode: inline data URL (local only)
+}
+function insertAtCursor(ta, text){
+  const s=(ta.selectionStart!=null)?ta.selectionStart:ta.value.length;
+  const e=(ta.selectionEnd!=null)?ta.selectionEnd:ta.value.length;
+  ta.value=ta.value.slice(0,s)+text+ta.value.slice(e);
+  const pos=s+text.length; ta.selectionStart=ta.selectionEnd=pos;
+  try{ ta.focus(); }catch(_){}
+}
+
 /* ---------- Icon library (for category customization) ---------- */
 const ICONS = {
   phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
@@ -418,10 +489,7 @@ function iconSvg(key){ return `<svg viewBox="0 0 24 24" fill="none" stroke="curr
 /* ---------- Categories (customizable; stored in DATA.cats) ---------- */
 const CAT_COLORS = ["#dc2626","#ea580c","#d97706","#059669","#0e7490","#2563eb","#4f46e5","#7c3aed","#db2777","#475569"];
 const DEFAULT_CATS = [
-  {id:"call",     name:"Who to Call",       plural:"contacts",  icon:"phone", color:"#dc2626", kind:"contact"},
-  {id:"consult",  name:"Consult Questions", plural:"topics",    icon:"help",  color:"#0e7490", kind:"content"},
-  {id:"docs",     name:"Documents & Links", plural:"documents", icon:"doc",   color:"#4f46e5", kind:"content"},
-  {id:"workflow", name:"Workflows",         plural:"workflows", icon:"list",  color:"#059669", kind:"content"},
+  {id:"docs",     name:"Loading...",       plural:"workflows",  icon:"help", color:"#dc2626", kind:"content"},
 ];
 function cats(){ return (DATA.cats && DATA.cats.length) ? DATA.cats : DEFAULT_CATS; }
 function catById(id){ return cats().find(c=>c.id===id) || {id:id||"other", name:"Other", plural:"items", icon:"doc", color:"#64748b", kind:"content"}; }
@@ -460,12 +528,25 @@ function safeUrl(u){
   if(/^[/#]/.test(u)) return u;
   return null; // block javascript:, data:, etc.
 }
+function safeImgUrl(u){
+  u=String(u||"").trim();
+  if(/^https?:\/\//i.test(u)) return u;
+  // raster data URLs only — NOT svg (script vector), NOT data:text/*
+  if(/^data:image\/(png|jpe?g|gif|webp);base64,[a-z0-9+/=\s]+$/i.test(u)) return u;
+  if(/^[/]/.test(u)) return u;
+  return null;
+}
 /* Inline formatting: links/wiki-links/code stashed before escaping, then bold/italic applied */
 function inlineMd(text){
   const tok=[];
   const stash = html => "\u0000T"+(tok.push(html)-1)+"\u0000";
   // inline code (protect from all other formatting)
   text = text.replace(/`([^`]+)`/g,(m,c)=>stash("<code>"+esc(c)+"</code>"));
+  // ![alt](url) images — must run BEFORE the link rule, since ![..](..) contains [..](..)
+  text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g,(m,alt,url)=>{
+    const safe=safeImgUrl(url); if(!safe) return "";
+    return stash(`<img class="md-img" loading="lazy" alt="${esc(alt)}" src="${esc(safe)}" />`);
+  });
   // [[wiki links]] and [[Title|label]] -> in-app subpage navigation
   text = text.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,(m,title,label)=>{
     const t=title.trim(), lbl=(label||title).trim();
@@ -540,6 +621,7 @@ function renderMarkdown(src){
 /* plain-text preview (strip markdown syntax) */
 function stripMd(s){
   return String(s||"").replace(/\r?\n/g," ")
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g,(m,a)=>a||"🖼")
     .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,(m,a,b)=>b||a)
     .replace(/\[([^\]]+)\]\([^)]*\)/g,"$1")
     .replace(/[#>*_`~-]/g," ").replace(/\s+/g," ").trim();
@@ -782,7 +864,16 @@ function openSheet(entry, prefill){
     <div class="field">
       <label>Details <span class="hint" style="display:inline">Markdown supported</span></label>
       <textarea id="f_body" placeholder="Markdown: **bold**, # headings, - bullets, 1. lists, > quotes, [links](https://…), and [[Page Title]] to link another card.">${esc(e.body)}</textarea>
+      <div class="md-toolbar">
+        <button type="button" class="md-tool" id="f_img">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          Add image
+        </button>
+        <span class="md-upstatus" id="f_imgstatus"></span>
+        <input type="file" id="f_imgfile" accept="image/*" style="display:none" />
+      </div>
       <div class="hint">**bold** · # heading · - bullet · [links](url) · [[Page Title]] opens another card</div>
+      <div class="hint phi-warn">⚠︎ No patient identifiers (names, MRNs, DOBs, faces). </div>
     </div>
     <div class="field">
       <label>Document / link URL <span class="hint" style="display:inline">(optional)</span></label>
@@ -798,6 +889,23 @@ function openSheet(entry, prefill){
     </div>`;
   const toggleCall=()=>{ $("#callFields").style.display = isContactCat($("#f_cat").value) ? "block":"none"; };
   sheet.querySelector("#f_cat").onchange=toggleCall; toggleCall();
+  const imgFile=sheet.querySelector("#f_imgfile");
+  const imgStatus=sheet.querySelector("#f_imgstatus");
+  sheet.querySelector("#f_img").onclick=()=>imgFile.click();
+  imgFile.onchange=async()=>{
+    const file=imgFile.files && imgFile.files[0]; if(!file) return;
+    imgStatus.textContent="Uploading…"; imgStatus.className="md-upstatus busy";
+    try{
+      const url=await uploadImage(file);
+      insertAtCursor(sheet.querySelector("#f_body"), "\n\n![]("+url+")\n\n");
+      imgStatus.textContent="Inserted ✓"; imgStatus.className="md-upstatus ok";
+      setTimeout(()=>{ imgStatus.textContent=""; imgStatus.className="md-upstatus"; }, 2200);
+    }catch(err){
+      imgStatus.textContent=""; imgStatus.className="md-upstatus";
+      toast("Upload failed: "+errMsg(err));
+    }
+    imgFile.value="";
+  };
   sheet.querySelector("#f_cancel").onclick=closeSheet;
   sheet.querySelector("#f_save").onclick=()=>saveFromSheet(e, isNew);
   showSheet();
@@ -875,7 +983,7 @@ async function initAuth(){
 function updateAccountUI(){
   const b=$("#whoBtn"); if(!b) return;
   if(CONFIGURED) b.textContent = USER ? (EDITOR || shortEmail(USER)) : "Sign in";
-  else b.textContent = EDITOR || "Preview";
+  else b.textContent = EDITOR || "Sign name";
 }
 $("#whoBtn").onclick=()=>openAccount();
 
@@ -1170,32 +1278,9 @@ function seed(){
   const now=Date.now();
   const mk=(cat,title,o={})=>({id:uid(),cat,title,subtitle:o.subtitle||"",phone:o.phone||"",pager:o.pager||"",ext:o.ext||"",body:o.body||"",url:o.url||"",tags:o.tags||[],updatedAt:now,updatedBy:"seed",history:[{by:"seed",at:now,action:"created"}]});
   return {
-    meta:{title:"CardsRef", sub:"Cardiology Fellows Reference"},
+    meta:{title:"AHC CardsRef", sub:"Cardiology Fellows Reference"},
     cats:DEFAULT_CATS.slice(),
     entries:[
-      mk("call","CCU Fellow",{subtitle:"Cardiac ICU coverage & escalation",phone:"x-0000",pager:"00000",tags:["on-call","CCU"]}),
-      mk("call","Interventional / Cath Lab",{subtitle:"STEMI activation · urgent PCI",phone:"x-0000",pager:"00000",body:"Activate for confirmed STEMI. Edit to add your program's exact activation line and after-hours pathway.",tags:["STEMI","urgent"]}),
-      mk("call","EP Fellow",{subtitle:"Arrhythmia · device interrogation",phone:"x-0000",pager:"00000",tags:["EP","devices"]}),
-      mk("call","Echo Lab / Reading Room",{subtitle:"TTE/TEE scheduling · wet reads",phone:"x-0000",tags:["echo"]}),
-      mk("call","Heart Failure / Transplant",{subtitle:"Advanced HF · MCS · transplant eval",phone:"x-0000",pager:"00000",tags:["HF"]}),
-      mk("call","Cardiac Surgery",{subtitle:"Valve · CABG · surgical consults",phone:"x-0000",pager:"00000"}),
-      mk("call","Attending on call",{subtitle:"Escalation / staffing",phone:"x-0000",tags:["escalation"]}),
-
-      mk("consult","New atrial fibrillation",{subtitle:"Rate vs rhythm · anticoagulation",body:"Placeholder scaffold — replace with your program's pathway.\n- Confirm rhythm and hemodynamic stability\n- Gather: onset/duration, triggers, prior episodes, meds, renal/hepatic function\n- Rate vs rhythm decision per stability and symptoms\n- Anticoagulation: apply your institution's risk-stratification tool\n- Document reasoning and disposition\n\nRelated: [[Troponin elevation]]",tags:["AF","arrhythmia"]}),
-      mk("consult","Troponin elevation",{subtitle:"Ischemic vs non-ischemic",body:"Scaffold — edit with your program's approach.\n- Frame the pretest probability and clinical context\n- Trend the biomarker; correlate with ECG and symptoms\n- Differential: type 1 vs type 2 vs non-ischemic causes\n- Decide monitoring level and who to loop in",tags:["ACS","troponin"]}),
-      mk("consult","Syncope",{subtitle:"Risk stratification & disposition",body:"Scaffold — edit for local practice.\n- History/exam and ECG first\n- Separate benign from high-risk features\n- Decide admit vs monitored vs discharge with follow-up",tags:["syncope"]}),
-      mk("consult","Pre-operative cardiac evaluation",{subtitle:"Peri-operative risk",body:"Scaffold — add your program's preferred framework and any local order sets.",tags:["pre-op"]}),
-      mk("consult","Chest pain triage from the floor",{subtitle:"When to escalate",body:"Scaffold — edit with escalation criteria and who to call.",tags:["chest pain","triage"]}),
-
-      mk("docs","Cardiology consult note template",{subtitle:"Standard note skeleton",url:"",body:"Paste the link to your shared note template (Drive/EMR smartphrase). Edit this entry and drop the URL in the link field.",tags:["template","notes"]}),
-      mk("docs","Anticoagulation drip protocols",{subtitle:"Heparin / bivalirudin references",body:"Link your institution's official protocol here — do not rely on memorized numbers.",tags:["anticoagulation"]}),
-      mk("docs","ACLS algorithms",{subtitle:"Code references",url:"https://cpr.heart.org",tags:["ACLS","code"]}),
-      mk("docs","ACC/AHA guideline hub",{subtitle:"Guideline quick links",url:"https://www.acc.org/guidelines",tags:["guidelines"]}),
-
-      mk("workflow","Place a cardiology consult",{subtitle:"Intake steps",body:"## Intake steps\n1. Confirm the **exact question** the primary team is asking\n2. Gather chart, labs, imaging, and a callback number\n3. Enter the consult order and page the covering fellow\n4. Document recommendations and follow-up\n\n> Tip: tap a linked page below to jump straight there.\n\nRelated pages: [[Order a TTE / TEE]] · [[Sign out the consult list]]",tags:["intake"]}),
-      mk("workflow","Order a TTE / TEE",{subtitle:"Echo request steps",body:"Edit with your EMR-specific order path, indications, and how urgent reads are requested.",tags:["echo"]}),
-      mk("workflow","Request device interrogation",{subtitle:"Pacemaker / ICD via EP",body:"Edit with the EP pathway for inpatient interrogation and after-hours coverage.",tags:["EP","devices"]}),
-      mk("workflow","Sign out the consult list",{subtitle:"Handoff expectations",body:"Scaffold — add your service's handoff format and what a good sign-out includes.",tags:["handoff"]}),
     ]
   };
 }
@@ -1225,7 +1310,7 @@ function initRealtime(){
 /* ---------- Boot: paint instantly, then hydrate from the backend ---------- */
 async function boot(){
   EDITOR = localStorageGet("cardsref_editor") || "";
-  DATA = { meta:{ title:CFG.APP_TITLE||"CardsRef", sub:CFG.APP_SUBTITLE||"Cardiology Fellows Reference" },
+  DATA = { meta:{ title:CFG.APP_TITLE||"AHC CardsRef", sub:CFG.APP_SUBTITLE||"Cardiology Fellows Reference" },
            cats:DEFAULT_CATS.slice(), entries:[] };
   view = {name:"home"};
   render();
